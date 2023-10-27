@@ -32,3 +32,49 @@ DELIMITER ;
 
 SELECT total_livros_por_genero('História');
 
+
+
+
+DELIMITER //
+CREATE FUNCTION listar_livros_por_autor(
+    primeiro_nome_autor VARCHAR(255),
+    ultimo_nome_autor VARCHAR(255)
+)
+RETURNS VARCHAR(255)
+BEGIN
+    DECLARE lista_de_livros VARCHAR(4000);
+    SET lista_de_livros = '';
+    
+    DECLARE done INT DEFAULT 0;
+    DECLARE livro_id INT;
+    DECLARE livro_titulo VARCHAR(255);
+    
+    DECLARE cur CURSOR FOR 
+        SELECT LA.id_livro, L.titulo
+        FROM Livro_Autor AS LA
+        INNER JOIN Livro AS L ON LA.id_livro = L.id
+        INNER JOIN Autor AS A ON LA.id_autor = A.id
+        WHERE A.primeiro_nome = primeiro_nome_autor
+        AND A.ultimo_nome = ultimo_nome_autor;
+    
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+    
+    OPEN cur;
+    
+    read_loop: LOOP
+        FETCH cur INTO livro_id, livro_titulo;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        
+        SET lista_de_livros = CONCAT(lista_de_livros, livro_titulo, ', ');
+    END LOOP;
+    
+    CLOSE cur;
+    
+    SET lista_de_livros = SUBSTRING(lista_de_livros, 1, LENGTH(lista_de_livros) - 2);
+    
+    RETURN lista_de_livros;
+END//
+DELIMITER ;
+SELECT listar_livros_por_autor('Maria', 'Fernandes');
